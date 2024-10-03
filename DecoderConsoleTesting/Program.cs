@@ -20,10 +20,6 @@ try
             Console.WriteLine(serialPort.ReadLine());
             records++;
         }
-        else
-        {
-            Console.WriteLine("[ Nenhum byte recebido ]");
-        }
     }
 }
 catch (Exception ex)

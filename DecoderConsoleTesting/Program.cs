@@ -1,38 +1,72 @@
-﻿using DecoderConsoleTesting;
-using System.IO.Ports;
+﻿using RJCP.IO.Ports;
+using System;
+using System.Text;
 
-Console.WriteLine("Inicializando teste...");
-
-var appSettings = SettingsLoader.LoadSettings();
-var serialPort = new SerialPort(appSettings.SerialPort, appSettings.BaudRate, Parity.None, 8, StopBits.One)
+class Program
 {
-    ReadTimeout = 1000,
-    Encoding = System.Text.Encoding.UTF8
-};
+    private static StringBuilder stringBuilder = new StringBuilder(); // Acumulador de dados
 
-Console.WriteLine("Configurações OK...");
-
-try
-{
-    serialPort.Open();
-
-    var records = 0;
-    while (records < appSettings.Records)
+    static void Main(string[] args)
     {
-        if (serialPort.BytesToRead > 0)
+        // Configurações da porta serial
+        string portName = "COM5";
+        int baudRate = 9600;
+
+        // Criação do SerialPortStream
+        using (var serialPort = new SerialPortStream(portName, baudRate))
         {
-            Console.WriteLine(serialPort.ReadLine());
-            records++;
+            try
+            {
+                // Abrir a porta
+                serialPort.Open();
+                serialPort.Encoding = Encoding.UTF8;
+
+                Console.WriteLine($"Conectado à {portName} com baudrate {baudRate}.");
+
+                // Assinar o evento DataReceived com o tipo correto de evento
+                serialPort.DataReceived += new EventHandler<RJCP.IO.Ports.SerialDataReceivedEventArgs>(DataReceivedHandler);
+
+                // Manter o programa rodando enquanto dados estão sendo recebidos
+                Console.WriteLine("Pressione qualquer tecla para encerrar...");
+                Console.ReadKey();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro: {ex.Message}");
+            }
+            finally
+            {
+                if (serialPort.IsOpen)
+                {
+                    serialPort.Close();
+                    Console.WriteLine("Porta fechada.");
+                }
+            }
         }
     }
-}
-catch (Exception ex)
-{
-    Console.WriteLine(ex);
-    Console.ReadLine();
-}
-finally
-{
-    serialPort.Close();
-    Console.WriteLine("Teste finalizado...");
+
+    // Método chamado sempre que novos dados são recebidos na porta serial
+    private static void DataReceivedHandler(object sender, RJCP.IO.Ports.SerialDataReceivedEventArgs e)
+    {
+        SerialPortStream sp = (SerialPortStream)sender;
+        byte[] buffer = new byte[sp.BytesToRead];
+        int bytesRead = sp.Read(buffer, 0, buffer.Length);
+        string inData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+        // Acumula os dados recebidos
+        stringBuilder.Append(inData);
+
+        // Verifica se a mensagem completa foi recebida (assumindo que termina com "\r\n")
+        if (stringBuilder.ToString().Contains("\r\n"))
+        {
+            // Extrai a mensagem completa
+            string fullMessage = stringBuilder.ToString().Trim();
+
+            // Limpa o acumulador para a próxima leitura
+            stringBuilder.Clear();
+
+            // Processa e exibe a mensagem completa
+            Console.WriteLine($"Recebido: {fullMessage}");
+        }
+    }
 }

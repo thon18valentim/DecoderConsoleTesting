@@ -1,5 +1,5 @@
 {
-  "SerialPort": "COM4",
+  "SerialPort": "COM5",
   "BaudRate": 9600,
   "Records":  1000
 }

@@ -1,8 +1,12 @@
 ﻿using DecoderConsoleTesting;
 using System.IO.Ports;
 
+Console.WriteLine("Inicializando teste...");
+
 var appSettings = SettingsLoader.LoadSettings();
 var serialPort = new SerialPort(appSettings.SerialPort, appSettings.BaudRate, Parity.None, 8, StopBits.One);
+
+Console.WriteLine("Configurações OK...");
 
 try
 {
@@ -16,6 +20,10 @@ try
             Console.WriteLine(serialPort.ReadLine());
             records++;
         }
+        else
+        {
+            Console.WriteLine("[ Nenhum byte recebido ]");
+        }
     }
 }
 catch (Exception ex)
@@ -26,4 +34,5 @@ catch (Exception ex)
 finally
 {
     serialPort.Close();
+    Console.WriteLine("Teste finalizado...");
 }
